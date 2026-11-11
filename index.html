@@ -83,11 +83,11 @@ const KINDS = {
   abroad:{name:"해외직구",desc:"달러($)로 파는 해외 쇼핑몰 특가(알리·아마존 등). 관부가세·배송비는 따로 확인하세요"},
   reward:{name:"적립·퀴즈",desc:"10원 받기, 퀴즈 정답, 추첨 이벤트 같은 소액 적립"},
 };
-let kind="coupon", all=[], cat="전체", sort="new";
+let kind="coupon", all=[], cat="전체", sort="new", delay={};
 const CATS=["먹거리","생활·주방","뷰티·건강","패션·잡화","가전","전자·PC","게임·앱","취미·완구","유아·반려","여행·문화","통신·금융","기타"];
 const SORTS={new:"최신순",hot:"인기순",save:"많이 싼 순"};
-const t0=d=>d.posted_at?new Date(d.posted_at).getTime():0;
-const SORTERS={new:(a,b)=>t0(b)-t0(a), hot:(a,b)=>((b.likes||0)+(b.comments||0)/3)-((a.likes||0)+(a.comments||0)/3)||t0(b)-t0(a),
+const t0=d=>d.posted_at?new Date(d.posted_at).getTime()-(delay[d.src]||0)*36e5:0;  // 큰 딜이 드문 출처는 몇 시간 뒤로
+const SORTERS={new:(a,b)=>t0(b)-t0(a), hot:(a,b)=>((b.likes||0)+(b.comments||0)/3)*(1-(delay[b.src]||0)/12)-((a.likes||0)+(a.comments||0)/3)*(1-(delay[a.src]||0)/12)||t0(b)-t0(a),
   save:(a,b)=>(okSave(b)??(b.pct||-99))-(okSave(a)??(a.pct||-99))||t0(b)-t0(a)};
 function okSave(d){return typeof d.save_pct==="number"&&d.save_pct>=-30?d.save_pct:null}
 const $=id=>document.getElementById(id);
@@ -149,7 +149,7 @@ $("tools").onclick=e=>{const c=e.target.closest(".cat"),s=e.target.closest("[dat
   if(c){cat=c.dataset.c;render();c.scrollIntoView&&$("cats").querySelector(`[data-c="${cat}"]`).scrollIntoView({inline:"center",block:"nearest"})}
   else if(s){sort=s.dataset.s;render()}};
 fetch("deals.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
-  all=j.deals; const u=new Date(j.updated);
+  all=j.deals; delay=j.src_delay||{}; const u=new Date(j.updated);
   $("upd").textContent=`갱신 ${u.getMonth()+1}/${u.getDate()} ${String(u.getHours()).padStart(2,"0")}:${String(u.getMinutes()).padStart(2,"0")}`;
   render();
 }).catch(()=>{$("upd").textContent="불러오기 실패";$("list").innerHTML=`<div class="empty">목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>`});
