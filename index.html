@@ -87,7 +87,8 @@ const CATS=["먹거리","생활·주방","뷰티·건강","패션·잡화","가�
 const SORTS={new:"최신순",hot:"인기순",save:"많이 싼 순"};
 const t0=d=>d.posted_at?new Date(d.posted_at).getTime():0;
 const SORTERS={new:(a,b)=>t0(b)-t0(a), hot:(a,b)=>((b.likes||0)+(b.comments||0)/3)-((a.likes||0)+(a.comments||0)/3)||t0(b)-t0(a),
-  save:(a,b)=>((b.save_pct??(b.pct||-99)))-((a.save_pct??(a.pct||-99)))||t0(b)-t0(a)};
+  save:(a,b)=>(okSave(b)??(b.pct||-99))-(okSave(a)??(a.pct||-99))||t0(b)-t0(a)};
+function okSave(d){return typeof d.save_pct==="number"&&d.save_pct>=-30?d.save_pct:null}
 const $=id=>document.getElementById(id);
 const won=n=>n==null?"":n.toLocaleString("ko-KR")+"원";
 const ago=iso=>{if(!iso)return "";const n=Math.round((Date.now()-new Date(iso))/6e4);return n<60?`${Math.max(n,0)}분 전`:n<1440?`${Math.round(n/60)}시간 전`:`${Math.round(n/1440)}일 전`};
@@ -129,7 +130,8 @@ function render(){
     </div><div class="r"><b>${esc(b)}</b><span>${esc(u)}</span></div></a>`}).join("");
   if(kind==="item") h=L.map(d=>{
     const sp=d.save_pct;
-    const mk=(d.market_low&&typeof sp==="number")?`<span class="mk ${sp>0?"good":sp<0?"bad":""}">${sp>0?`시중 ${won(d.market_low)}보다 ${sp}%↓`:sp<0?`시중이 ${-sp}% 더 쌈`:"시중가와 같음"}</span>`:"";
+    // 시중이 30% 넘게 싸면 다른 상품(낱개·묶음)과 잘못 짝지어진 경우가 대부분이라 숨김
+    const mk=(d.market_low&&typeof sp==="number"&&sp>=-30)?`<span class="mk ${sp>0?"good":sp<0?"bad":""}">${sp>0?`시중 ${won(d.market_low)}보다 ${sp}% 쌈`:sp<0?`시중 최저 ${won(d.market_low)}이 더 쌈`:"시중가와 같음"}</span>`:"";
     const price=d.price_won?`<b>${won(d.price_won)}${d.price_from?"~":""}</b>${d.orig_est?`<s>${won(d.orig_est)}</s>`:""}`:(d.pct?`<b>${d.pct}%</b>`:"");
     const pop=[d.likes?`추천 ${d.likes}`:"",d.comments?`댓글 ${d.comments}`:""].filter(Boolean).join(" ");
     return `<a class="it${d.image?"":" noimg"}" href="${esc(d.url)}" target="_blank" rel="noopener">
