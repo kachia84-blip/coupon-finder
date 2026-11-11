@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4ef">
+<title>쿠폰검색기</title>
+<style>
+@font-face{font-family:"Pretendard";src:url("fonts/pretendard-sub.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{
+  --bg:#f6f4ef;--card:#fff;--ink:#1c1b19;--sub:#6d6a63;--line:#e6e2d9;
+  --hot:#e8452c;--hot-soft:#fde9e4;--pay:#0f7b5f;--pay-soft:#e2f3ec;--chip:#efece5;--item:#2457c5;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141412;--card:#1f1e1b;--ink:#f1efe9;--sub:#a29e95;--line:#2f2d29;
+  --hot:#ff6a4f;--hot-soft:#3a1d17;--pay:#3fc79c;--pay-soft:#16302a;--chip:#2a2925;--item:#7da2ff;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard",system-ui,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 48px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(14px + env(safe-area-inset-top,0px)) 0 12px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.upd{color:var(--sub);font-size:12.5px}
+.kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:12px;background:var(--chip);padding:4px;border-radius:12px}
+.kind{border:0;background:none;color:var(--sub);font:inherit;font-size:14px;font-weight:700;padding:8px 4px;border-radius:9px;cursor:pointer;line-height:1.2}
+.kind small{display:block;font-size:11.5px;font-weight:500;margin-top:2px}
+.kind[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.desc{margin:14px 2px 10px;color:var(--sub);font-size:13px}
+.tk{display:grid;grid-template-columns:1fr 112px;background:var(--card);border-radius:16px;margin-bottom:12px;border:1px solid var(--line);position:relative;overflow:hidden;text-decoration:none;color:inherit}
+.tk .l{padding:15px 14px 14px 16px;min-width:0}
+.tk .r{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 6px;border-left:2px dashed var(--line);background:var(--hot-soft);text-align:center}
+.tk .r b{font-size:24px;font-weight:900;letter-spacing:-.03em;color:var(--hot);line-height:1.05;word-break:keep-all}
+.tk .r span{font-size:12px;font-weight:700;color:var(--hot)}
+.tk::before,.tk::after{content:"";position:absolute;right:104px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.tk::before{top:-10px}.tk::after{bottom:-10px}
+.brand{font-size:13px;font-weight:800;color:var(--hot);margin-bottom:3px}
+.ttl{font-size:15px;font-weight:600;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center;font-size:12px;color:var(--sub)}
+.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--ink)}
+.chip.pay{background:var(--pay-soft);color:var(--pay)}
+.chip.hot{background:var(--hot-soft);color:var(--hot)}
+.it{display:grid;grid-template-columns:1fr auto;gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.it .t{font-size:14.5px;font-weight:500;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.it .p{text-align:right;white-space:nowrap}
+.it .p b{display:block;font-size:16px;font-weight:800;color:var(--item)}
+.it .p s{font-size:12px;color:var(--sub)}
+.it .s{grid-column:1/-1;color:var(--sub);font-size:12.5px}
+.mk{display:inline-block;margin-left:4px;font-weight:700}
+.mk.good{color:var(--pay)}.mk.bad{color:var(--hot)}
+.rw{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--sub);text-decoration:none}
+.rw span:last-child{flex:none;font-size:12px}
+.empty{color:var(--sub);text-align:center;padding:24px 0;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="top"><h1>쿠폰검색기</h1><span class="upd" id="upd">불러오는 중</span></div>
+  <div class="kinds" id="kinds"></div>
+</header>
+<p class="desc" id="desc"></p>
+<div id="list"></div>
+</div>
+<script>
+const KINDS = {
+  coupon:{name:"브랜드·쿠폰",desc:"유명 브랜드 행사가, 할인 쿠폰, 결제 시 할인처럼 정해진 기간에만 받는 혜택"},
+  item:{name:"싼 물건",desc:"쇼핑몰 상품 특가. 줄 친 가격은 할인율로 거꾸로 계산한 원래 가격, 초록 글씨는 에누리 최저가 대비(상품명으로 찾은 참고값이라 가끔 다른 상품과 비교될 수 있어요)"},
+  reward:{name:"적립·퀴즈",desc:"10원 받기, 퀴즈 정답, 추첨 이벤트 같은 소액 적립"},
+};
+let kind="coupon", all=[];
+const $=id=>document.getElementById(id);
+const won=n=>n==null?"":n.toLocaleString("ko-KR")+"원";
+const ago=iso=>{if(!iso)return "";const n=Math.round((Date.now()-new Date(iso))/6e4);return n<60?`${Math.max(n,0)}분 전`:n<1440?`${Math.round(n/60)}시간 전`:`${Math.round(n/1440)}일 전`};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip=t=>`<span class="chip ${/페이|Pay/.test(t)?"pay":"hot"}">${esc(t)}</span>`;
+const strip=t=>t.replace(/^\s*\[[^\]]*\]\s*/,"").replace(/\s*\([^()]*\d[^()]*\)\s*$/,"");
+function bigOf(d){
+  if(d.pct) return [d.pct+"%", d.benefit||"할인"];
+  if(d.won_off) return [won(d.won_off), "할인"];
+  if((d.flags||[]).includes("1+1")) return ["1+1", d.price_won?won(d.price_won):""];
+  if((d.flags||[]).includes("무료")) return ["무료", ""];
+  if(d.price_won) return [won(d.price_won), "행사가"];
+  return ["행사",""];
+}
+function tags(d){
+  const f=(d.flags||[]).filter(x=>!["1+1","무료","기한"].includes(x));
+  return [d.pay,...f, d.deadline?`~${d.deadline.slice(5).replace("-","/")}`:""].filter(Boolean);
+}
+function render(){
+  const cnt=k=>all.filter(d=>d.kind===k).length;
+  $("kinds").innerHTML=Object.entries(KINDS).map(([k,v])=>`<button class="kind" data-k="${k}" aria-pressed="${k===kind}">${v.name}<small>${cnt(k)}건</small></button>`).join("");
+  $("desc").textContent=KINDS[kind].desc;
+  const L=all.filter(d=>d.kind===kind);
+  let h="";
+  if(kind==="coupon") h=L.map(d=>{const [b,u]=bigOf(d);return `
+    <a class="tk" href="${esc(d.url)}" target="_blank" rel="noopener"><div class="l">
+      <div class="brand">${esc(d.brand||d.shop||d.src)}</div>
+      <p class="ttl">${esc(strip(d.title))}</p>
+      <div class="meta">${tags(d).map(chip).join("")}<span>${esc(d.src)} · ${ago(d.posted_at)}</span></div>
+    </div><div class="r"><b>${esc(b)}</b><span>${esc(u)}</span></div></a>`}).join("");
+  if(kind==="item") h=L.map(d=>{
+    const sp=d.save_pct;
+    const mk=(d.market_low&&typeof sp==="number")?`<span class="mk ${sp>0?"good":sp<0?"bad":""}">${sp>0?`시중 ${won(d.market_low)}보다 ${sp}%↓`:sp<0?`시중이 ${-sp}% 더 쌈`:"시중가와 같음"}</span>`:"";
+    const price=d.price_won?`<b>${won(d.price_won)}${d.price_from?"~":""}</b>${d.orig_est?`<s>${won(d.orig_est)}</s>`:""}`:(d.pct?`<b>${d.pct}%</b>`:"");
+    return `<a class="it" href="${esc(d.url)}" target="_blank" rel="noopener">
+      <span class="t">${esc(strip(d.title))}</span><span class="p">${price}</span>
+      <span class="s">${esc(d.src)}${d.also?" 외 "+d.also.length+"곳":""}${d.shop?" · "+esc(d.shop):""}${d.posted_at?" · "+ago(d.posted_at):""}${d.membership?" · "+esc(d.membership):""}${mk}</span></a>`}).join("");
+  if(kind==="reward") h=L.map(d=>`<a class="rw" href="${esc(d.url)}" target="_blank" rel="noopener"><span>${esc(d.title)}</span><span>${esc(d.src)}${d.posted_at?" · "+ago(d.posted_at):""}</span></a>`).join("");
+  $("list").innerHTML=h||`<div class="empty">지금은 글이 없어요</div>`;
+}
+$("kinds").onclick=e=>{const b=e.target.closest(".kind");if(!b)return;kind=b.dataset.k;render();scrollTo(0,0)};
+fetch("deals.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
+  all=j.deals; const u=new Date(j.updated);
+  $("upd").textContent=`갱신 ${u.getMonth()+1}/${u.getDate()} ${String(u.getHours()).padStart(2,"0")}:${String(u.getMinutes()).padStart(2,"0")}`;
+  render();
+}).catch(()=>{$("upd").textContent="불러오기 실패";$("list").innerHTML=`<div class="empty">목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>`});
+</script>
+</body>
+</html>
