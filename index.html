@@ -115,7 +115,9 @@ function render(){
   let h="";
   if(kind==="item"){
     const counts={};L.forEach(d=>{const c=d.category||"기타";counts[c]=(counts[c]||0)+1});
-    const cats=["전체",...CATS.filter(c=>counts[c]),...Object.keys(counts).filter(c=>!CATS.includes(c))];
+    // 많은 분류부터(같으면 정해진 순서), 기타는 맨 뒤
+    const order=c=>{const i=CATS.indexOf(c);return i<0?99:i};
+    const cats=["전체",...Object.keys(counts).filter(c=>c!=="기타").sort((a,b)=>counts[b]-counts[a]||order(a)-order(b)),...(counts["기타"]?["기타"]:[])];
     if(!cats.includes(cat)) cat="전체";
     $("tools").innerHTML=`<div class="bar" id="cats">${cats.map(c=>`<button class="cat" data-c="${c}" aria-pressed="${c===cat}">${c}<small>${c==="전체"?L.length:counts[c]}</small></button>`).join("")}</div>
       <div class="sort" id="sorts">${Object.entries(SORTS).map(([k,v])=>`<button data-s="${k}" aria-pressed="${k===sort}">${v}</button>`).join("")}</div>`;
