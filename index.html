@@ -22,14 +22,35 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(14px + 
 .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
 .upd{color:var(--sub);font-size:12.5px}
-.kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:12px;background:var(--chip);padding:4px;border-radius:12px}
-.kind{border:0;background:none;color:var(--sub);font:inherit;font-size:14px;font-weight:700;padding:8px 4px;border-radius:9px;cursor:pointer;line-height:1.2}
+.kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:12px;background:var(--chip);padding:4px;border-radius:12px}
+.kind{border:0;background:none;color:var(--sub);font:inherit;font-size:14px;font-weight:700;padding:8px 4px;border-radius:9px;cursor:pointer;line-height:1.2;min-width:0;white-space:nowrap}
+@media(max-width:380px){.kind{font-size:12px}}
+.top .actions{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.saved-toggle,.save{border:1px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-size:12px;padding:3px 7px;border-radius:6px;cursor:pointer}
+.save{position:absolute;top:8px;right:8px;z-index:1}
+.save[aria-pressed=true],.saved-toggle[aria-pressed=true]{color:var(--hot);border-color:var(--hot)}
+.search{display:block;width:100%;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:16px}
+.search::placeholder{color:var(--sub)}
+.it,.rw{position:relative}
+.it .p{padding-top:25px}
+.it .save,.rw .save{right:2px}
+.rw{min-height:48px}
+.switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.switch .cat{border-radius:9px;padding:8px 4px}
+.cvs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.cvs{min-width:0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.cvs img{display:block;width:100%;aspect-ratio:1;object-fit:contain;margin-bottom:8px}
+.cvs .store{font-size:12px;color:var(--sub)}
+.cvs .name{font-size:14px;font-weight:600;margin:4px 0 8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.cvs .price{margin-top:6px;font-size:16px;font-weight:800}
+.cvs .unit{font-size:13px;color:var(--hot)}
+.more{display:block;margin:16px auto 0}
 .kind small{display:block;font-size:11.5px;font-weight:500;margin-top:2px}
 .kind[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .desc{margin:14px 2px 10px;color:var(--sub);font-size:13px}
 .tk{display:grid;grid-template-columns:1fr 112px;background:var(--card);border-radius:16px;margin-bottom:12px;border:1px solid var(--line);position:relative;overflow:hidden;text-decoration:none;color:inherit}
 .tk .l{padding:15px 14px 14px 16px;min-width:0}
-.tk .r{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 6px;border-left:2px dashed var(--line);background:var(--hot-soft);text-align:center}
+.tk .r{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:30px 6px 12px;border-left:2px dashed var(--line);background:var(--hot-soft);text-align:center}
 .tk .r b{font-size:24px;font-weight:900;letter-spacing:-.03em;color:var(--hot);line-height:1.05;word-break:keep-all}
 .tk .r span{font-size:12px;font-weight:700;color:var(--hot)}
 .tk::before,.tk::after{content:"";position:absolute;right:104px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
@@ -61,7 +82,7 @@ h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
 .it .s{color:var(--sub);font-size:12.5px}
 .mk{display:inline-block;margin-left:4px;font-weight:700}
 .mk.good{color:var(--pay)}.mk.bad{color:var(--hot)}
-.rw{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--sub);text-decoration:none}
+.rw{display:flex;justify-content:space-between;gap:10px;padding:9px 58px 9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--sub);text-decoration:none}
 .rw span:last-child{flex:none;font-size:12px}
 .empty{color:var(--sub);text-align:center;padding:24px 0;font-size:14px}
 </style>
@@ -69,10 +90,12 @@ h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
 <body>
 <div class="wrap">
 <header>
-  <div class="top"><h1>쿠폰검색기</h1><span class="upd" id="upd">불러오는 중</span></div>
+  <div class="top"><h1>쿠폰검색기</h1><div class="actions"><span class="upd" id="upd">불러오는 중</span><button class="saved-toggle" id="saved-toggle" aria-pressed="false">찜 0</button></div></div>
+  <input class="search" id="search" type="search" placeholder="치킨, 스타벅스, 라면…" aria-label="목록 검색">
   <div class="kinds" id="kinds"></div>
 </header>
 <p class="desc" id="desc"></p>
+<div id="channel"></div>
 <div id="tools"></div>
 <div id="list"></div>
 </div>
@@ -84,6 +107,8 @@ const KINDS = {
   reward:{name:"적립·퀴즈",desc:"10원 받기, 퀴즈 정답, 추첨 이벤트 같은 소액 적립"},
 };
 let kind="coupon", all=[], cat="전체", sort="new", delay={};
+let query="", saved=[], showSaved=false, cvs=null, channel="coupon", store="전체", event="전체", limit=60;
+try{const s=JSON.parse(localStorage.getItem("saved")||"[]");if(Array.isArray(s)) saved=s.filter((d,i)=>d&&typeof d.url==="string"&&typeof d.title==="string"&&s.findIndex(x=>x&&x.url===d.url)===i)}catch(e){}
 const CATS=["먹거리","생활·주방","뷰티·건강","패션·잡화","가전","전자·PC","게임·앱","취미·완구","유아·반려","여행·문화","통신·금융","기타"];
 const SORTS={new:"최신순",hot:"인기순",save:"많이 싼 순"};
 const t0=d=>d.posted_at?new Date(d.posted_at).getTime()-(delay[d.src]||0)*36e5:0;  // 큰 딜이 드문 출처는 몇 시간 뒤로
@@ -96,6 +121,12 @@ const ago=iso=>{if(!iso)return "";const n=Math.round((Date.now()-new Date(iso))/
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chip=t=>`<span class="chip ${/페이|Pay/.test(t)?"pay":"hot"}">${esc(t)}</span>`;
 const strip=t=>t.replace(/^\s*\[[^\]]*\]\s*/,"").replace(/\s*\([^()]*\d[^()]*\)\s*$/,"");
+const norm=s=>String(s??"").toLowerCase().replace(/\s/g,"");
+const matches=d=>!query||[d.title,d.brand,d.shop,d.src,d.name].some(v=>norm(v).includes(query));
+const day=n=>new Date(Date.now()+9*36e5+n*864e5).toISOString().slice(0,10);
+const deadline=d=>d.deadline===day(0)?"오늘 마감":d.deadline===day(1)?"내일 마감":"";
+const saveButton=d=>{const on=saved.some(s=>s.url===d.url);return `<button class="save" data-save="${esc(d.url)}" aria-pressed="${on}">${on?"찜함":"찜"}</button>`};
+const priceOf=d=>d.kind==="coupon"?bigOf(d)[0]:d.kind==="reward"?"":d.price_usd?`$${d.price_usd}${d.price_from?"~":""}`:d.price_won?won(d.price_won)+(d.price_from?"~":""):d.pct?d.pct+"%":"";
 function bigOf(d){
   if(d.pct) return [d.pct+"%", d.benefit||"할인"];
   if(d.won_off) return [won(d.won_off), "할인"];
@@ -106,13 +137,30 @@ function bigOf(d){
 }
 function tags(d){
   const f=(d.flags||[]).filter(x=>!["1+1","무료","기한"].includes(x));
-  return [d.pay,...f, d.deadline?`~${d.deadline.slice(5).replace("-","/")}`:""].filter(Boolean);
+  return [d.pay,...f, d.kind==="coupon"?deadline(d):"", d.deadline?`~${d.deadline.slice(5).replace("-","/")}`:""].filter(Boolean);
 }
 function render(){
-  const cnt=k=>all.filter(d=>d.kind===k).length;
+  const cnt=k=>all.filter(d=>d.kind===k&&matches(d)).length;
   $("kinds").innerHTML=Object.entries(KINDS).map(([k,v])=>`<button class="kind" data-k="${k}" aria-pressed="${k===kind}">${v.name}<small>${cnt(k)}건</small></button>`).join("");
   $("desc").textContent=KINDS[kind].desc;
-  let L=all.filter(d=>d.kind===kind);
+  $("saved-toggle").textContent=showSaved?"닫기":`찜 ${saved.length}`;
+  $("saved-toggle").setAttribute("aria-pressed",showSaved);
+  const C=cvs?cvs.filter(matches):[];
+  $("channel").innerHTML=!showSaved&&kind==="coupon"&&cvs?`<div class="switch">${[["coupon",`핫딜 쿠폰 ${cnt("coupon")}`],["cvs",`편의점 행사 ${C.length}`]].map(([k,v])=>`<button class="cat" data-channel="${k}" aria-pressed="${channel===k}">${v}</button>`).join("")}</div>`:"";
+  if(showSaved){
+    $("desc").textContent="찜한 글을 최근에 담은 순서로 보여드려요";
+    $("tools").innerHTML="";
+    const L=[...saved].sort((a,b)=>(Date.parse(b.saved_at)||0)-(Date.parse(a.saved_at)||0)).filter(s=>matches({...all.find(d=>d.url===s.url),...s}));
+    $("list").innerHTML=L.map(d=>`<a class="tk" href="${esc(d.url)}" target="_blank" rel="noopener">${saveButton(d)}<div class="l"><div class="brand">${esc(d.src)}</div><p class="ttl">${esc(d.title)}</p><div class="meta">${all.some(x=>x.url===d.url)?"":chip("지난 글")}</div></div><div class="r"><b>${esc(d.price)}</b></div></a>`).join("")||`<div class="empty">${query?"검색 결과가 없어요":"찜한 글이 없어요"}</div>`;
+    return;
+  }
+  if(kind==="coupon"&&cvs&&channel==="cvs"){
+    $("tools").innerHTML=`<div class="bar">${["전체","CU","세븐일레븐","이마트24"].map(s=>`<button class="cat" data-store="${s}" aria-pressed="${store===s}">${s}</button>`).join("")}</div><div class="bar">${["전체","1+1","2+1","그 밖"].map(s=>`<button class="cat" data-event="${s}" aria-pressed="${event===s}">${s}</button>`).join("")}</div>`;
+    const L=C.filter(d=>(store==="전체"||d.store===store)&&(event==="전체"||(event==="그 밖"?!["1+1","2+1"].includes(d.event):d.event===event)));
+    $("list").innerHTML=L.length?`<div class="cvs-grid">${L.slice(0,limit).map(d=>`<div class="cvs">${d.image?`<img src="${esc(d.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.style.display='none'">`:""}<div class="store">${esc(d.store)}</div><p class="name">${esc(d.name)}</p>${chip(d.event)}<div class="price">${won(d.price)}</div>${/^\d+\+1$/.test(d.event)&&Number.isInteger(d.unit)?`<div class="unit">개당 ${won(d.unit)}</div>`:""}</div>`).join("")}</div>${L.length>limit?`<button class="cat more" id="more">더 보기</button>`:""}`:`<div class="empty">${query?"검색 결과가 없어요":"지금은 행사가 없어요"}</div>`;
+    return;
+  }
+  let L=all.filter(d=>d.kind===kind&&matches(d));
   let h="";
   if(kind==="item"){
     const counts={};L.forEach(d=>{const c=d.category||"기타";counts[c]=(counts[c]||0)+1});
@@ -125,8 +173,9 @@ function render(){
     if(cat!=="전체") L=L.filter(d=>(d.category||"기타")===cat);
     L=[...L].sort(SORTERS[sort]);
   } else $("tools").innerHTML="";
+  if(kind==="coupon") L=[...L].sort((a,b)=>Number(b.deadline===day(0))-Number(a.deadline===day(0)));
   if(kind==="coupon") h=L.map(d=>{const [b,u]=bigOf(d);return `
-    <a class="tk" href="${esc(d.url)}" target="_blank" rel="noopener"><div class="l">
+    <a class="tk" href="${esc(d.url)}" target="_blank" rel="noopener">${saveButton(d)}<div class="l">
       <div class="brand">${esc(d.brand||d.shop||d.src)}</div>
       <p class="ttl">${esc(strip(d.title))}</p>
       <div class="meta">${tags(d).map(chip).join("")}<span>${esc(d.src)} · ${ago(d.posted_at)}</span></div>
@@ -138,21 +187,35 @@ function render(){
     const price=d.price_usd?`<b>$${esc(d.price_usd)}${d.price_from?"~":""}</b>`:d.price_won?`<b>${won(d.price_won)}${d.price_from?"~":""}</b>${d.orig_est?`<s>${won(d.orig_est)}</s>`:""}`:(d.pct?`<b>${d.pct}%</b>`:"");
     const pop=[d.likes?`추천 ${d.likes}`:"",d.comments?`댓글 ${d.comments}`:""].filter(Boolean).join(" ");
     return `<a class="it${d.image?"":" noimg"}" href="${esc(d.url)}" target="_blank" rel="noopener">
+      ${saveButton(d)}
       ${d.image?`<img class="th" src="${esc(d.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg');this.remove()">`:""}
       <span class="t">${esc(strip(d.title))}</span><span class="p">${price}</span>
       <span class="s">${esc(d.src)}${d.also?" 외 "+d.also.length+"곳":""}${d.shop?" · "+esc(d.shop):""}${d.posted_at?" · "+ago(d.posted_at):""}${pop?" · "+pop:""}${d.membership?" · "+esc(d.membership):""}${mk}</span></a>`}).join("");
-  if(kind==="reward") h=L.map(d=>`<a class="rw" href="${esc(d.url)}" target="_blank" rel="noopener"><span>${esc(d.title)}</span><span>${esc(d.src)}${d.posted_at?" · "+ago(d.posted_at):""}</span></a>`).join("");
-  $("list").innerHTML=h||`<div class="empty">지금은 글이 없어요</div>`;
+  if(kind==="reward") h=L.map(d=>`<a class="rw" href="${esc(d.url)}" target="_blank" rel="noopener">${saveButton(d)}<span>${esc(d.title)}</span><span>${esc(d.src)}${d.posted_at?" · "+ago(d.posted_at):""}</span></a>`).join("");
+  $("list").innerHTML=h||`<div class="empty">${query?"검색 결과가 없어요":"지금은 글이 없어요"}</div>`;
 }
-$("kinds").onclick=e=>{const b=e.target.closest(".kind");if(!b)return;kind=b.dataset.k;render();scrollTo(0,0)};
+$("search").oninput=e=>{query=norm(e.target.value);limit=60;render()};
+$("saved-toggle").onclick=()=>{showSaved=!showSaved;render()};
+$("channel").onclick=e=>{const b=e.target.closest("[data-channel]");if(!b)return;channel=b.dataset.channel;limit=60;render()};
+$("list").onclick=e=>{const b=e.target.closest("[data-save]");if(b){
+  e.preventDefault();e.stopPropagation();const url=b.dataset.save,i=saved.findIndex(d=>d.url===url);
+  if(i>=0) saved.splice(i,1);
+  else{const d=all.find(d=>d.url===url);if(!d)return;saved.unshift({url:d.url,title:d.title,src:d.src,price:priceOf(d),saved_at:new Date().toISOString()})}
+  try{localStorage.setItem("saved",JSON.stringify(saved))}catch(e){}
+  render();
+}else if(e.target.closest("#more")){limit+=60;render()}};
+$("kinds").onclick=e=>{const b=e.target.closest(".kind");if(!b)return;kind=b.dataset.k;showSaved=false;render();scrollTo(0,0)};
 $("tools").onclick=e=>{const c=e.target.closest(".cat"),s=e.target.closest("[data-s]");
+  if(c&&("store" in c.dataset||"event" in c.dataset)){if("store" in c.dataset) store=c.dataset.store;else event=c.dataset.event;limit=60;render();return}
   if(c){cat=c.dataset.c;render();c.scrollIntoView&&$("cats").querySelector(`[data-c="${cat}"]`).scrollIntoView({inline:"center",block:"nearest"})}
   else if(s){sort=s.dataset.s;render()}};
-fetch("deals.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
+render();
+fetch("cvs.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(j=>{if(Array.isArray(j.items)){cvs=j.items;render()}}).catch(()=>{});
+fetch("deals.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(j=>{
   all=j.deals; delay=j.src_delay||{}; const u=new Date(j.updated);
   $("upd").textContent=`갱신 ${u.getMonth()+1}/${u.getDate()} ${String(u.getHours()).padStart(2,"0")}:${String(u.getMinutes()).padStart(2,"0")}`;
   render();
-}).catch(()=>{$("upd").textContent="불러오기 실패";$("list").innerHTML=`<div class="empty">목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>`});
+}).catch(()=>{$("upd").textContent="불러오기 실패";if(!showSaved&&!(kind==="coupon"&&cvs&&channel==="cvs")) $("list").innerHTML=`<div class="empty">목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>`});
 </script>
 </body>
 </html>
