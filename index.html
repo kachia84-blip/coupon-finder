@@ -110,13 +110,13 @@ h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
 <div id="channel"></div>
 <div id="tools"></div>
 <div id="list"></div>
-<p class="kind-hint">카드를 길게 누르면 종류를 옮길 수 있어요</p>
+<p class="kind-hint">카드를 길게 누르면 종류를 옮기거나, 끝난 글을 숨길 수 있어요</p>
 </div>
 <div class="kind-sheet" id="kind-sheet" role="dialog" aria-modal="true" aria-labelledby="kind-title" hidden>
   <div class="kind-panel">
     <p class="kind-title" id="kind-title"></p>
     <div class="kind-options"><button class="cat" data-kind-fix="coupon">쿠폰</button><button class="cat" data-kind-fix="item">물건</button><button class="cat" data-kind-fix="abroad">해외직구</button><button class="cat" data-kind-fix="reward">적립</button></div>
-    <div class="kind-sheet-actions"><button class="cat" id="kind-reset" hidden>원래대로</button><button class="cat" id="kind-close">닫기</button></div>
+    <div class="kind-sheet-actions"><button class="cat" id="kind-ended">끝났어요 · 숨기기</button><button class="cat" id="kind-reset" hidden>원래대로</button><button class="cat" id="kind-close">닫기</button></div>
   </div>
 </div>
 <script>
@@ -134,6 +134,10 @@ try{const f=JSON.parse(localStorage.getItem("kindFix")||"{}");if(f&&typeof f==="
 const CATS=["먹거리","생활·주방","뷰티·건강","패션·잡화","가전","전자·PC","게임·앱","취미·완구","유아·반려","여행·문화","통신·금융","기타"];
 const CAT_EMOJI={"먹거리":"🍗","생활·주방":"🧻","뷰티·건강":"💄","패션·잡화":"👕","가전":"📺","전자·PC":"💻","게임·앱":"🎮","취미·완구":"🧸","유아·반려":"🐶","여행·문화":"✈️","통신·금융":"💳","기타":"🛍️"};
 const categoryEmoji=d=>Object.hasOwn(CAT_EMOJI,d.category)?CAT_EMOJI[d.category]:CAT_EMOJI["기타"];
+// 끝났어요로 숨긴 글 {url: 숨긴 시각}, 그 폰에만·7일 지나면 잊음 (2026-11-12 사용자)
+const endedHide=Object.create(null);
+try{const f=JSON.parse(localStorage.getItem("endedHide")||"{}");if(f&&typeof f==="object"&&!Array.isArray(f)) Object.entries(f).forEach(([url,t])=>{if(typeof t==="string"&&Date.now()-Date.parse(t)<7*864e5) endedHide[url]=t})}catch(e){}
+const saveEndedHide=()=>{try{localStorage.setItem("endedHide",JSON.stringify(endedHide))}catch(e){}};
 function applyKindFix(d){d.kind0=d.kind0||d.kind||"coupon";d.kind=kindFix[d.url]||d.kind0;return d}
 const movedChip=d=>d.kind!==d.kind0?'<span class="chip">옮김</span>':"";
 const SORTS={new:"최신순",hot:"인기순",save:"많이 싼 순"};
@@ -163,12 +167,14 @@ function bigOf(d){
 }
 function tags(d){
   const f=(d.flags||[]).filter(x=>!["1+1","무료","기한"].includes(x));
-  return [d.pay,...f, d.kind==="coupon"?deadline(d):"", d.deadline?`~${d.deadline.slice(5).replace("-","/")}`:""].filter(Boolean);
+  // 마감일 없이 이틀 넘은 쿠폰은 아직 되는지 확인하라는 표시 (2026-11-12)
+  const old=d.kind==="coupon"&&!d.deadline&&d.posted_at&&Date.now()-Date.parse(d.posted_at)>=2*864e5;
+  return [d.pay,...f, d.kind==="coupon"?deadline(d):"", d.deadline&&!(d.kind==="coupon"&&deadline(d))?`${d.deadline.slice(5).replace("-","/").replace(/^0/,"").replace("/0","/")}까지`:"", old?"기한 확인":""].filter(Boolean);
 }
 function render(){
   all.forEach(applyKindFix);
   saved.forEach(s=>{const d=all.find(d=>d.url===s.url);if(d) s.kind0=d.kind0;applyKindFix(s)});
-  const cnt=k=>all.filter(d=>d.kind===k&&matches(d)).length;
+  const cnt=k=>all.filter(d=>d.kind===k&&matches(d)&&!endedHide[d.url]).length;
   $("kinds").innerHTML=Object.entries(KINDS).map(([k,v])=>`<button class="kind" data-k="${k}" aria-pressed="${k===kind}">${v.name}<small>${cnt(k)}건</small></button>`).join("");
   $("desc").textContent=KINDS[kind].desc;
   $("saved-toggle").textContent=showSaved?"닫기":`찜 ${saved.length}`;
@@ -188,7 +194,8 @@ function render(){
     $("list").innerHTML=L.length?`<div class="cvs-grid">${L.slice(0,limit).map(d=>`<div class="cvs">${d.image?`<img src="${esc(d.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.style.display='none'">`:""}<div class="store">${esc(d.store)}</div><p class="name">${esc(d.name)}</p>${chip(d.event)}<div class="price">${won(d.price)}</div>${/^\d+\+1$/.test(d.event)&&Number.isInteger(d.unit)?`<div class="unit">개당 ${won(d.unit)}</div>`:""}</div>`).join("")}</div>${L.length>limit?`<button class="cat more" id="more">더 보기</button>`:""}`:`<div class="empty">${query?"검색 결과가 없어요":"지금은 행사가 없어요"}</div>`;
     return;
   }
-  let L=all.filter(d=>d.kind===kind&&matches(d));
+  let L=all.filter(d=>d.kind===kind&&matches(d)&&!endedHide[d.url]);
+  const hiddenN=all.filter(d=>d.kind===kind&&endedHide[d.url]).length;
   let h="";
   if(kind==="item"){
     const counts={};L.forEach(d=>{const c=d.category||"기타";counts[c]=(counts[c]||0)+1});
@@ -220,7 +227,7 @@ function render(){
       <span class="t">${esc(strip(d.title))}</span><span class="p">${price}</span>
       <span class="s">${movedChip(d)}${esc(d.src)}${d.also?" 외 "+d.also.length+"곳":""}${d.shop?" · "+esc(d.shop):""}${d.posted_at?" · "+ago(d.posted_at):""}${pop?" · "+pop:""}${d.membership?" · "+esc(d.membership):""}${mk}</span></a>`}).join("");
   if(kind==="reward") h=L.map(d=>`<a class="rw" href="${esc(d.url)}" target="_blank" rel="noopener">${saveButton(d)}<span>${esc(d.title)}${movedChip(d)}</span><span>${esc(d.src)}${d.posted_at?" · "+ago(d.posted_at):""}</span></a>`).join("");
-  $("list").innerHTML=h||`<div class="empty">${query?"검색 결과가 없어요":"지금은 글이 없어요"}</div>`;
+  $("list").innerHTML=(h||`<div class="empty">${query?"검색 결과가 없어요":"지금은 글이 없어요"}</div>`)+(hiddenN?`<button class="cat more" id="unhide">끝났어요로 숨긴 글 ${hiddenN}개 다시 보기</button>`:"");
 }
 $("search").oninput=e=>{query=norm(e.target.value);limit=60;render()};
 $("saved-toggle").onclick=()=>{showSaved=!showSaved;render()};
@@ -231,7 +238,8 @@ $("list").onclick=e=>{const b=e.target.closest("[data-save]");if(b){
   else{const d=all.find(d=>d.url===url);if(!d)return;saved.unshift({url:d.url,title:d.title,src:d.src,kind0:d.kind0,kind:d.kind,price:priceOf(d),saved_at:new Date().toISOString()})}
   try{localStorage.setItem("saved",JSON.stringify(saved))}catch(e){}
   render();
-}else if(e.target.closest("#more")){limit+=60;render()}};
+}else if(e.target.closest("#more")){limit+=60;render()}
+else if(e.target.closest("#unhide")){all.forEach(d=>{if(d.kind===kind) delete endedHide[d.url]});saveEndedHide();render()}};
 $("kinds").onclick=e=>{const b=e.target.closest(".kind");if(!b)return;kind=b.dataset.k;showSaved=false;render();scrollTo(0,0)};
 $("tools").onclick=e=>{const c=e.target.closest(".cat"),s=e.target.closest("[data-s]");
   if(c&&("store" in c.dataset||"event" in c.dataset)){if("store" in c.dataset) store=c.dataset.store;else event=c.dataset.event;limit=60;render();return}
@@ -253,6 +261,7 @@ function closeKindSheet(){
 }
 $("kind-sheet").onclick=e=>{
   if(e.target===$("kind-sheet")||e.target.closest("#kind-close")){closeKindSheet();return}
+  if(e.target.closest("#kind-ended")&&sheetDeal){endedHide[sheetDeal.url]=new Date().toISOString();saveEndedHide();render();closeKindSheet();return}
   const b=e.target.closest("[data-kind-fix],#kind-reset");if(!b||!sheetDeal)return;
   const k=b.dataset.kindFix,url=sheetDeal.url;
   if(!k||k===sheetDeal.kind0) delete kindFix[url];else kindFix[url]=k;
