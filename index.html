@@ -128,7 +128,7 @@ const KINDS = {
   abroad:{name:"해외직구",desc:"달러($)로 파는 해외 쇼핑몰 특가(알리·아마존 등). 관부가세·배송비는 따로 확인하세요"},
   reward:{name:"적립·퀴즈",desc:"10원 받기, 퀴즈 정답, 추첨 이벤트 같은 소액 적립"},
 };
-let kind="coupon", all=[], cat="전체", sort="new", delay={};
+let kind="coupon", all=[], cat="전체", sort="new", csort="hot", delay={};  // 쿠폰 탭은 인기순이 기본 (2026-11-19 사용자)
 let query="", saved=[], showSaved=false, cvs=null, channel="coupon", store="전체", event="전체", limit=60;
 try{const s=JSON.parse(localStorage.getItem("saved")||"[]");if(Array.isArray(s)) saved=s.filter((d,i)=>d&&typeof d.url==="string"&&typeof d.title==="string"&&s.findIndex(x=>x&&x.url===d.url)===i)}catch(e){}
 const kindFix=Object.create(null);
@@ -211,6 +211,9 @@ function render(){
       <div class="sort" id="sorts">${Object.entries(SORTS).map(([k,v])=>`<button data-s="${k}" aria-pressed="${k===sort}">${v}</button>`).join("")}</div>`;
     if(cat!=="전체") L=L.filter(d=>(d.category||"기타")===cat);
     L=[...L].sort(SORTERS[sort]);
+  } else if(kind==="coupon"){
+    $("tools").innerHTML=`<div class="sort">${[["hot","인기순"],["new","최신순"]].map(([k,v])=>`<button data-cs="${k}" aria-pressed="${k===csort}">${v}</button>`).join("")}</div>`;
+    L=[...L].sort(SORTERS[csort]);
   } else $("tools").innerHTML="";
   if(kind==="coupon") L=[...L].sort((a,b)=>Number(b.deadline===day(0))-Number(a.deadline===day(0)));
   if(kind==="coupon") h=L.map(d=>{const [b,u]=bigOf(d);return `
@@ -245,7 +248,8 @@ $("list").onclick=e=>{const b=e.target.closest("[data-save]");if(b){
 }else if(e.target.closest("#more")){limit+=60;render()}
 else if(e.target.closest("#unhide")){all.forEach(d=>{if(d.kind===kind) delete endedHide[d.url]});saveEndedHide();render()}};
 $("kinds").onclick=e=>{const b=e.target.closest(".kind");if(!b)return;kind=b.dataset.k;showSaved=false;render();scrollTo(0,0)};
-$("tools").onclick=e=>{const c=e.target.closest(".cat"),s=e.target.closest("[data-s]");
+$("tools").onclick=e=>{const c=e.target.closest(".cat"),s=e.target.closest("[data-s]"),cs=e.target.closest("[data-cs]");
+  if(cs){csort=cs.dataset.cs;render();return}
   if(c&&("store" in c.dataset||"event" in c.dataset)){if("store" in c.dataset) store=c.dataset.store;else event=c.dataset.event;limit=60;render();return}
   if(c){cat=c.dataset.c;render();c.scrollIntoView&&$("cats").querySelector(`[data-c="${cat}"]`).scrollIntoView({inline:"center",block:"nearest"})}
   else if(s){sort=s.dataset.s;render()}};
