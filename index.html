@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f6f4ef">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="쿠폰검색기">
 <title>쿠폰검색기</title>
 <style>
 @font-face{font-family:"Pretendard";src:url("fonts/pretendard-sub.woff2") format("woff2");font-weight:100 900;font-display:swap}
@@ -30,6 +35,7 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 @media(max-width:380px){.kind{font-size:12px}}
 .top .actions{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
 .saved-toggle,.save{border:1px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-size:12px;line-height:18px;padding:4px 8px;border-radius:8px;cursor:pointer}
+#install-hint{color:var(--sub);font-size:12px;margin-top:8px}
 .save{position:absolute;top:8px;right:8px;z-index:1}
 .save[aria-pressed=true],.saved-toggle[aria-pressed=true]{color:var(--hot);border-color:var(--hot)}
 .search{display:block;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:16px}
@@ -104,7 +110,8 @@ h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
 <body>
 <div class="wrap">
 <header>
-  <div class="top"><h1>쿠폰검색기</h1><div class="actions"><span class="upd" id="upd">불러오는 중</span><button class="saved-toggle" id="saved-toggle" aria-pressed="false">찜 0</button></div></div>
+  <div class="top"><h1>쿠폰검색기</h1><div class="actions"><span class="upd" id="upd">불러오는 중</span><button class="saved-toggle" id="install-btn" hidden>설치</button><button class="saved-toggle" id="saved-toggle" aria-pressed="false">찜 0</button></div></div>
+  <div id="install-hint" hidden>공유 버튼을 누른 뒤 홈 화면에 추가를 고르세요</div>
   <input class="search" id="search" type="search" placeholder="치킨, 스타벅스, 라면…" aria-label="목록 검색">
   <div class="kinds" id="kinds"></div>
 </header>
@@ -150,6 +157,37 @@ const SORTERS={new:(a,b)=>t0(b)-t0(a), hot:(a,b)=>hot(b)-hot(a)||t0(b)-t0(a),
   save:(a,b)=>(okSave(b)??(b.pct||-99))-(okSave(a)??(a.pct||-99))||t0(b)-t0(a)};
 function okSave(d){return typeof d.save_pct==="number"&&d.save_pct>=-30?d.save_pct:null}
 const $=id=>document.getElementById(id);
+{
+  const installBtn=$("install-btn"), installHint=$("install-hint");
+  const standalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  const ua=navigator.userAgent;
+  const ios=/iPad|iPhone|iPod/.test(ua)||(/Mac/.test(navigator.platform)&&navigator.maxTouchPoints>1);
+  let installPrompt;
+  if(!standalone()&&ios&&/Version\/.*Safari\//.test(ua)&&!/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua))installBtn.hidden=false;
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    if(standalone())return;
+    installPrompt=e;
+    installHint.hidden=true;
+    installBtn.hidden=false;
+  });
+  installBtn.onclick=async()=>{
+    if(!installPrompt){installHint.hidden=!installHint.hidden;return}
+    const prompt=installPrompt;
+    installBtn.disabled=true;
+    try{await prompt.prompt();await prompt.userChoice}catch(e){}finally{
+      installPrompt=null;
+      installBtn.hidden=true;
+      installBtn.disabled=false;
+    }
+  };
+  window.addEventListener("appinstalled",()=>{
+    installPrompt=null;
+    installBtn.hidden=true;
+    installHint.hidden=true;
+  });
+}
+if("serviceWorker" in navigator)window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})});
 const won=n=>n==null?"":n.toLocaleString("ko-KR")+"원";
 const ago=iso=>{if(!iso)return "";const n=Math.round((Date.now()-new Date(iso))/6e4);return n<60?`${Math.max(n,0)}분 전`:n<1440?`${Math.round(n/60)}시간 전`:`${Math.round(n/1440)}일 전`};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
